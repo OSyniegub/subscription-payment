@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link href='https://use.fontawesome.com/releases/v5.8.1/css/all.css'>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <br/>
+    <div class="row flex-md-column justify-content-center align-items-center">
+        <div class="col-md-6">
+            <article class="card">
+                <div class="card-body p-5">
+                    <ul class="nav bg-light nav-pills rounded nav-fill mb-3" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-toggle="pill" href="#nav-tab-card">
+                                <i class="fa fa-credit-card"></i> Credit Card</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="pill" href="#nav-tab-paypal">
+                                <i class="fab fa-paypal"></i>  Paypal</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="pill" href="#nav-tab-paypal">
+                                <i class="fab fa-paypal"></i>  ApplePay</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="pill" href="#nav-tab-paypal">
+                                <i class="fab fa-paypal"></i>  GooglePay</a></li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="nav-tab-card">
+                            <form action="/api/v1/charge" method="post">
+                                <input hidden type="text" class="form-control" name="item_id" value="{{ . }}">
+                                <input hidden type="text" class="form-control" name="amount" value="1">
+                                <input hidden type="text" class="form-control" name="currency" value="USD">
+                                <div class="form-group">
+                                    <label for="card_name">Full name (on the card)</label>
+                                    <input id="card_name" type="text" class="form-control" name="card_name" placeholder="" required="">
+                                </div> <!-- form-group.// -->
+
+                                <div class="form-group">
+                                    <label for="card_number">Card number</label>
+                                    <div class="input-group">
+                                        <input id="card_number" type="text" class="form-control" name="card_number" placeholder="">
+                                        <div class="input-group-append">
+				<span class="input-group-text text-muted">
+					<i class="fab fa-cc-visa"></i>   <i class="fab fa-cc-amex"></i>  
+					<i class="fab fa-cc-mastercard"></i>
+				</span>
+                                        </div>
+                                    </div>
+                                </div> <!-- form-group.// -->
+
+                                <div class="row">
+                                    <div class="col-sm-8">
+                                        <div class="form-group">
+                                            <label><span class="hidden-xs">Expiration</span> </label>
+                                            <div class="input-group">
+                                                <input type="number" class="form-control" placeholder="MM" name="card_expiry_month">
+                                                <input type="number" class="form-control" placeholder="YY" name="card_expiry_year">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="form-group">
+                                            <label data-toggle="tooltip" title="" data-original-title="3 digits code on back side of the card">CVV <i class="fa fa-question-circle"></i></label>
+                                            <input type="number" name="card_security_code" class="form-control" required="">
+                                        </div> <!-- form-group.// -->
+                                    </div>
+                                </div> <!-- row.// -->
+                                <button class="subscribe btn btn-primary btn-block" type="submit"> Confirm  </button>
+                            </form>
+                        </div> <!-- tab-pane.// -->
+                        <div class="tab-pane fade" id="nav-tab-paypal">
+                            <p>Paypal is easiest way to pay online</p>
+                            <p>
+                                <button type="button" class="btn btn-primary"> <i class="fab fa-paypal"></i> Log in my Paypal </button>
+                            </p>
+                            <p><strong>Note:</strong> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+                                tempor incididunt ut labore et dolore magna aliqua. </p>
+                        </div>
+                    </div> <!-- tab-content .// -->
+
+                </div> <!-- card-body.// -->
+            </article> <!-- card.// -->
+
+        </div>
+        </div>
+    </div>
+</body>
+</html>
