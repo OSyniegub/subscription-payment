@@ -1,26 +1,14 @@
 package main
 
 import (
-	"github.com/OSyniegub/subscription-payment/gateway"
+	"github.com/OSyniegub/subscription-payment/payment"
 	"github.com/gorilla/mux"
-	"github.com/stripe/stripe-go/v71"
-	"github.com/stripe/stripe-go/v71/charge"
-	"github.com/stripe/stripe-go/v71/paymentintent"
 	"html/template"
 	"net/http"
 )
 
 type ChargeRequestDto struct {
 	PaymentId string `json:"payment_id"`
-}
-
-type ChargeResponseDto struct {
-	Status string `json:"status"`
-	ReceiptUrl string `njson:"charges.data.receipt_url"`
-}
-
-type StripeChargeDataDto struct {
-	ReceiptUrl string `json:"receipt_url"`
 }
 
 type ApplePay struct {}
@@ -58,22 +46,10 @@ func home(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func makePaymentIntent(pg PaymentGateway, itemId string) (string, error)  {
-	return pg.PaymentIntent(getAmount(itemId))
-}
-
-func makePaymentConfirm(pg PaymentGateway, paymentId string) (stripe.PaymentIntent, error)  {
-	return pg.PaymentConfirm(paymentId)
-}
-
-func getCharge(pg PaymentGateway, chargeId string) (string, error)  {
-	return pg.ChargeGet(chargeId)
-}
-
 func paymentForm(w http.ResponseWriter, r *http.Request) {
 	itemId := r.URL.Query().Get("item_id")
 
-	paymentId, err := makePaymentIntent(&Stripe{}, itemId)
+	paymentId, err := payment.MakePaymentIntent(&payment.Stripe{}, getAmount(itemId))
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -89,14 +65,14 @@ func paymentCharge(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	paymentId := r.Form.Get("payment_id")
 
-	paymentConfirm, err := makePaymentConfirm(&Stripe{}, paymentId)
+	paymentConfirm, err := payment.MakePaymentConfirm(&payment.Stripe{}, paymentId)
 
-	if err != nil && paymentConfirm.Status != "succeed" {
+	if err != nil || paymentConfirm.Status != "succeed" {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	http.Redirect(w, r, paymentConfirm.Charges.Data[0].ReceiptURL, http.StatusSeeOther)
+	http.Redirect(w, r, paymentConfirm.ReceiptUrl, http.StatusSeeOther)
 
 	return
 }

@@ -1,8 +1,8 @@
-package gateway
+package payment
 
 import (
+	"github.com/OSyniegub/subscription-payment/payment/dto"
 	"github.com/stripe/stripe-go/v71"
-	"github.com/stripe/stripe-go/v71/charge"
 	"github.com/stripe/stripe-go/v71/paymentintent"
 )
 
@@ -23,7 +23,7 @@ func (s Stripe) PaymentIntent(amount int64) (string, error) {
 	return pi.ID, err
 }
 
-func (s Stripe) PaymentConfirm(paymentId string) (string, error) {
+func (s Stripe) PaymentConfirm(paymentId string) (dto.PaymentConfirmResponseDto, error) {
 	stripe.Key = "sk_test_51I1dzaAoiWfQjN7OE4ExtBtv6S5RvXxcQQt8sIHzcMSfs9wgUakNFl5udNXckUHXvcLeVWY1wMzdAsfkJnhm5WQI00pOFESNLQ"
 
 	/*
@@ -55,13 +55,8 @@ func (s Stripe) PaymentConfirm(paymentId string) (string, error) {
 
 	pic, err := paymentintent.Confirm(paymentId, params)
 
-	return pic.Charges.Data[0].ReceiptURL, err
-}
-
-func (s Stripe) ChargeGet(chargeId string) (string, error) {
-	stripe.Key = "sk_test_51I1dzaAoiWfQjN7OE4ExtBtv6S5RvXxcQQt8sIHzcMSfs9wgUakNFl5udNXckUHXvcLeVWY1wMzdAsfkJnhm5WQI00pOFESNLQ"
-
-	c, err := charge.Get(chargeId, nil)
-
-	return c.ReceiptURL, err
+	return dto.PaymentConfirmResponseDto{
+		Status:		string(pic.Status),
+		ReceiptUrl:	pic.Charges.Data[0].ReceiptURL,
+	}, err
 }
