@@ -4,6 +4,7 @@ import (
 	"github.com/OSyniegub/subscription-payment/payment/dto"
 	"github.com/stripe/stripe-go/v71"
 	"github.com/stripe/stripe-go/v71/paymentintent"
+	"github.com/stripe/stripe-go/v71/token"
 )
 
 type Stripe struct {}
@@ -20,43 +21,57 @@ func (s Stripe) PaymentIntent(amount int64) (string, error) {
 
 	pi, err := paymentintent.New(params)
 
+	if err != nil {
+		return "", err
+	}
+
 	return pi.ID, err
 }
 
-func (s Stripe) PaymentConfirm(paymentId string) (dto.PaymentConfirmResponseDto, error) {
+func (s Stripe) PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) (dto.PaymentConfirmResponseDto, error) {
 	stripe.Key = "sk_test_51I1dzaAoiWfQjN7OE4ExtBtv6S5RvXxcQQt8sIHzcMSfs9wgUakNFl5udNXckUHXvcLeVWY1wMzdAsfkJnhm5WQI00pOFESNLQ"
-
-	/*
-		TODO add logic to generate card token and remove commented code below
-		cardCVC := "323"
-		cardExpMonth := "12"
-		cardExpYear := "2021"
-		cardNumber := "4242424242424242"
-	*/
-	cardToken := "tok_visa"
 
 	params := &stripe.PaymentIntentConfirmParams{
 		PaymentMethodData: &stripe.PaymentIntentPaymentMethodDataParams{
 			Card: &stripe.PaymentMethodCardParams{
-				/*
-					CVC:      stripe.String(cardCVC),
-					ExpMonth: stripe.String(cardExpMonth),
-					ExpYear:  stripe.String(cardExpYear),
-					Number:   stripe.String(cardNumber),
-				*/
-				Token:    stripe.String(cardToken),
+				Token:    stripe.String(requestDto.CardToken),
 			},
 			BillingDetails: &stripe.BillingDetailsParams{
-
+				Name: stripe.String(requestDto.CardName),
 			},
 			Type: stripe.String("card"),
 		},
 	}
 
-	pic, err := paymentintent.Confirm(paymentId, params)
+	pic, err := paymentintent.Confirm(requestDto.PaymentId, params)
+
+	if err != nil {
+		return dto.PaymentConfirmResponseDto{}, err
+	}
 
 	return dto.PaymentConfirmResponseDto{
 		Status:		string(pic.Status),
 		ReceiptUrl:	pic.Charges.Data[0].ReceiptURL,
 	}, err
+}
+
+func (s Stripe) CardTokenGenerate(requestDto dto.CardTokenGenerateRequestDto) (string, error) {
+	stripe.Key = "sk_test_51I1dzaAoiWfQjN7OE4ExtBtv6S5RvXxcQQt8sIHzcMSfs9wgUakNFl5udNXckUHXvcLeVWY1wMzdAsfkJnhm5WQI00pOFESNLQ"
+
+	params := &stripe.TokenParams{
+		Card: &stripe.CardParams{
+			Number: stripe.String(requestDto.CardNumber),
+			ExpMonth: stripe.String(requestDto.CardExpiryMonth),
+			ExpYear: stripe.String(requestDto.CardExpiryYear),
+			CVC: stripe.String(requestDto.CardSecurityCode),
+		},
+	}
+
+	t, err := token.New(params)
+
+	if err != nil {
+		return "", err
+	}
+
+	return t.ID, err
 }

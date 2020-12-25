@@ -1,16 +1,23 @@
 package payment
 
-import "github.com/OSyniegub/subscription-payment/payment/dto"
+import (
+	"github.com/OSyniegub/subscription-payment/payment/dto"
+)
 
 type Gateway interface {
 	PaymentIntent(amount int64) (string, error)
-	PaymentConfirm(clientSecret string) (dto.PaymentConfirmResponseDto, error)
+	PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) (dto.PaymentConfirmResponseDto, error)
+	CardTokenGenerate(requestDto dto.CardTokenGenerateRequestDto) (string, error)
 }
 
 func MakePaymentIntent(gateway Gateway, amount int64) (string, error)  {
 	return gateway.PaymentIntent(amount)
 }
 
-func MakePaymentConfirm(gateway Gateway, paymentId string) (dto.PaymentConfirmResponseDto, error)  {
-	return gateway.PaymentConfirm(paymentId)
+func MakePaymentConfirm(gateway Gateway, requestDto dto.PaymentConfirmRequestDto) (dto.PaymentConfirmResponseDto, error)  {
+	return gateway.PaymentConfirm(requestDto)
+}
+
+func MakeCardTokenGenerate(gateway Gateway, requestDto dto.CardTokenGenerateRequestDto) (string, error) {
+	return gateway.CardTokenGenerate(requestDto)
 }

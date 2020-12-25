@@ -2,7 +2,9 @@ package main
 
 import (
 	"github.com/OSyniegub/subscription-payment/payment"
+	"github.com/OSyniegub/subscription-payment/payment/dto"
 	"github.com/gorilla/mux"
+	"gopkg.in/go-playground/validator.v9"
 	"html/template"
 	"net/http"
 )
@@ -63,11 +65,39 @@ func paymentForm(w http.ResponseWriter, r *http.Request) {
 
 func paymentCharge(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	paymentId := r.Form.Get("payment_id")
+	//paymentId := r.Form.Get("payment_id")
 
-	paymentConfirm, err := payment.MakePaymentConfirm(&payment.Stripe{}, paymentId)
+	cardTokenGenerateRequestDto := dto.CardTokenGenerateRequestDto{
+		CardNumber:       r.Form.Get("card_number"),
+		CardExpiryMonth:  r.Form.Get("card_expiry_month"),
+		CardExpiryYear:   r.Form.Get("card_expiry_year"),
+		CardSecurityCode: r.Form.Get("card_security_code"),
+	}
 
-	if err != nil || paymentConfirm.Status != "succeed" {
+	err := validator.New().Struct(cardTokenGenerateRequestDto)
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	cardToken, err := payment.MakeCardTokenGenerate(&payment.Stripe{}, cardTokenGenerateRequestDto)
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	paymentConfirmRequestDto := dto.PaymentConfirmRequestDto{
+		PaymentId: r.Form.Get("payment_id"),
+		Currency:  r.Form.Get("currency"),
+		CardName:  r.Form.Get("card_name"),
+		CardToken: cardToken,
+	}
+
+	paymentConfirm, err := payment.MakePaymentConfirm(&payment.Stripe{}, paymentConfirmRequestDto)
+
+	if err != nil  {
 		http.Error(w, err.Error(), 500)
 		return
 	}
