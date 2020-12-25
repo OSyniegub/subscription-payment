@@ -9,10 +9,6 @@ import (
 	"net/http"
 )
 
-type ChargeRequestDto struct {
-	PaymentId string `json:"payment_id"`
-}
-
 type ApplePay struct {}
 type GooglePay struct {}
 type PayPal struct {}
@@ -37,6 +33,7 @@ func setupRouter() *mux.Router {
 	// Routes
 	router.HandleFunc("/", home).Methods("GET")
 	router.HandleFunc("/payment_form", paymentForm).Methods("GET")
+	// API v1
 	router.HandleFunc("/api/v1/charge", paymentCharge).Methods("POST")
 
 	return router
@@ -65,7 +62,6 @@ func paymentForm(w http.ResponseWriter, r *http.Request) {
 
 func paymentCharge(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	//paymentId := r.Form.Get("payment_id")
 
 	cardTokenGenerateRequestDto := dto.CardTokenGenerateRequestDto{
 		CardNumber:       r.Form.Get("card_number"),
@@ -93,6 +89,13 @@ func paymentCharge(w http.ResponseWriter, r *http.Request) {
 		Currency:  r.Form.Get("currency"),
 		CardName:  r.Form.Get("card_name"),
 		CardToken: cardToken,
+	}
+
+	err = validator.New().Struct(paymentConfirmRequestDto)
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
 	}
 
 	paymentConfirm, err := payment.MakePaymentConfirm(&payment.Stripe{}, paymentConfirmRequestDto)
