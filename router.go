@@ -31,11 +31,11 @@ func getAmount(itemId string) int64 {
 	var amount int64
 
 	if itemId == "1" {
-		amount = 399
+		amount = 500
 	} else if itemId == "2" {
-		amount = 499
+		amount = 1500
 	} else {
-		amount = 599
+		amount = 3000
 	}
 
 	return amount
@@ -161,8 +161,6 @@ func paymentCharge(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-
-	fmt.Println(strconv.Itoa(int(time.Since(start).Milliseconds())) + "ms")
 
 	w.Header().Add("X-Server-Name", hostname)
 	w.Header().Add("X-Response-Time", strconv.Itoa(int(time.Since(start).Milliseconds())) + "ms")

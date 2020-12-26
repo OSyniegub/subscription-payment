@@ -11,26 +11,19 @@
 <main class="container">
     <div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
         <h1 class="display-4">Subscription</h1>
-        <p class="lead">Quickly build an effective pricing table for your potential customers with this Bootstrap example. It’s built with default Bootstrap components and utilities with little customization.</p>
     </div>
 
     <div class="row row-cols-1 row-cols-md-3 mb-3 text-center">
         <div class="col">
             <div class="card mb-4 shadow-sm">
                 <div class="card-header">
-                    <h4 class="my-0 fw-normal">Free</h4>
+                    <h4 class="my-0 fw-normal">Basic</h4>
                 </div>
                 <div class="card-body">
-                    <h1 class="card-title pricing-card-title">$0 <small class="text-muted">/ mo</small></h1>
-                    <ul class="list-unstyled mt-3 mb-4">
-                        <li>10 users included</li>
-                        <li>2 GB of storage</li>
-                        <li>Email support</li>
-                        <li>Help center access</li>
-                    </ul>
+                    <h1 class="card-title pricing-card-title">$5 <small class="text-muted">/ mo</small></h1>
                     <form action="/payment_form" method="get">
-                        <label hidden for="item_id">First name:</label>
-                        <input hidden type="text" id="item_id" name="item_id" value="1"><br><br>
+                        <label hidden for="item_id_1">First name:</label>
+                        <input hidden type="text" id="item_id_1" name="item_id" value="1"><br><br>
                         <button type="submit" class="w-100 btn btn-lg btn-primary">Buy</button>
                     </form>
                 </div>
@@ -43,13 +36,11 @@
                 </div>
                 <div class="card-body">
                     <h1 class="card-title pricing-card-title">$15 <small class="text-muted">/ mo</small></h1>
-                    <ul class="list-unstyled mt-3 mb-4">
-                        <li>20 users included</li>
-                        <li>10 GB of storage</li>
-                        <li>Priority email support</li>
-                        <li>Help center access</li>
-                    </ul>
-                    <button type="button" class="w-100 btn btn-lg btn-primary">Get started</button>
+                    <form action="/payment_form" method="get">
+                        <label hidden for="item_id_2">First name:</label>
+                        <input hidden type="text" id="item_id_2" name="item_id" value="2"><br><br>
+                        <button type="submit" class="w-100 btn btn-lg btn-primary">Buy</button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -59,14 +50,12 @@
                     <h4 class="my-0 fw-normal">Enterprise</h4>
                 </div>
                 <div class="card-body">
-                    <h1 class="card-title pricing-card-title">$29 <small class="text-muted">/ mo</small></h1>
-                    <ul class="list-unstyled mt-3 mb-4">
-                        <li>30 users included</li>
-                        <li>15 GB of storage</li>
-                        <li>Phone and email support</li>
-                        <li>Help center access</li>
-                    </ul>
-                    <button type="button" class="w-100 btn btn-lg btn-primary">Contact us</button>
+                    <h1 class="card-title pricing-card-title">$30 <small class="text-muted">/ mo</small></h1>
+                    <form action="/payment_form" method="get">
+                        <label hidden for="item_id_3">First name:</label>
+                        <input hidden type="text" id="item_id_3" name="item_id" value="3"><br><br>
+                        <button type="submit" class="w-100 btn btn-lg btn-primary">Buy</button>
+                    </form>
                 </div>
             </div>
         </div>
