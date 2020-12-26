@@ -2,18 +2,26 @@ package payment
 
 import (
 	"github.com/OSyniegub/subscription-payment/payment/dto"
+	"encoding/json"
 	"github.com/stripe/stripe-go/v71"
 	"github.com/stripe/stripe-go/v71/paymentintent"
 	"github.com/stripe/stripe-go/v71/token"
+	"strconv"
 )
 
 type Stripe struct {}
 
-func (s Stripe) PaymentIntent(amount int64) (string, error) {
+func (s Stripe) PaymentIntent(amount string) (string, error) {
 	stripe.Key = "sk_test_51I1dzaAoiWfQjN7OE4ExtBtv6S5RvXxcQQt8sIHzcMSfs9wgUakNFl5udNXckUHXvcLeVWY1wMzdAsfkJnhm5WQI00pOFESNLQ"
 
+	amountInt, err := strconv.Atoi(amount)
+
+	if err != nil {
+		return "", err
+	}
+
 	params := &stripe.PaymentIntentParams{
-		Amount: stripe.Int64(amount),
+		Amount: stripe.Int64(int64(amountInt)),
 		Currency: stripe.String(string(stripe.CurrencyUSD)),
 	}
 
@@ -28,7 +36,7 @@ func (s Stripe) PaymentIntent(amount int64) (string, error) {
 	return pi.ID, err
 }
 
-func (s Stripe) PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) (dto.PaymentConfirmResponseDto, error) {
+func (s Stripe) PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) ([]byte, error) {
 	stripe.Key = "sk_test_51I1dzaAoiWfQjN7OE4ExtBtv6S5RvXxcQQt8sIHzcMSfs9wgUakNFl5udNXckUHXvcLeVWY1wMzdAsfkJnhm5WQI00pOFESNLQ"
 
 	params := &stripe.PaymentIntentConfirmParams{
@@ -39,20 +47,23 @@ func (s Stripe) PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) (dto.Pay
 			BillingDetails: &stripe.BillingDetailsParams{
 				Name: stripe.String(requestDto.CardName),
 			},
-			Type: stripe.String("card"),
+			Type: stripe.String(string((stripe.PaymentMethodTypeCard))),
 		},
 	}
 
 	pic, err := paymentintent.Confirm(requestDto.PaymentId, params)
 
 	if err != nil {
-		return dto.PaymentConfirmResponseDto{}, err
+		return []byte(""), err
 	}
 
-	return dto.PaymentConfirmResponseDto{
-		Status:		string(pic.Status),
-		ReceiptUrl:	pic.Charges.Data[0].ReceiptURL,
-	}, err
+	paymentintentJson, err := json.Marshal(pic)
+
+	if err != nil  {
+		return []byte(""), err
+	}
+
+	return paymentintentJson, err
 }
 
 func (s Stripe) CardTokenGenerate(requestDto dto.CardTokenGenerateRequestDto) (string, error) {

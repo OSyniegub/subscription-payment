@@ -1,17 +1,29 @@
 package main
 
 import (
+	"crypto/md5"
+	"fmt"
 	"github.com/OSyniegub/subscription-payment/payment"
 	"github.com/OSyniegub/subscription-payment/payment/dto"
 	"github.com/gorilla/mux"
 	"gopkg.in/go-playground/validator.v9"
 	"html/template"
+	"io"
 	"net/http"
+	"strconv"
 )
 
-type ApplePay struct {}
-type GooglePay struct {}
-type PayPal struct {}
+func setupRouter() *mux.Router {
+	router := mux.NewRouter()
+
+	// Routes
+	router.HandleFunc("/", home).Methods("GET")
+	router.HandleFunc("/payment_form", paymentForm).Methods("GET")
+	// API v1
+	router.HandleFunc("/api/v1/charge", paymentCharge).Methods("POST")
+
+	return router
+}
 
 func getAmount(itemId string) int64 {
 	var amount int64
@@ -27,16 +39,29 @@ func getAmount(itemId string) int64 {
 	return amount
 }
 
-func setupRouter() *mux.Router {
-	router := mux.NewRouter()
+func getPaymentGateway(paymentMethod string) payment.Gateway {
+	/* not working due to authorization error
+	var gateway payment.Gateway
 
-	// Routes
-	router.HandleFunc("/", home).Methods("GET")
-	router.HandleFunc("/payment_form", paymentForm).Methods("GET")
-	// API v1
-	router.HandleFunc("/api/v1/charge", paymentCharge).Methods("POST")
+	if paymentMethod == "card" {
+		gateway = &payment.Stripe{}
+	} else if paymentMethod == "paypal" {
+			gateway = &payment.Paypal{}
+	}
+	*/
 
-	return router
+	return &payment.Stripe{}
+}
+
+var token string
+
+func generateToken() string {
+	h := md5.New()
+	io.WriteString(h, strconv.FormatInt(3, 10))
+	io.WriteString(h, "tok")
+	token := fmt.Sprintf("%x", h.Sum(nil))
+
+	return token
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
@@ -48,20 +73,32 @@ func home(w http.ResponseWriter, r *http.Request) {
 func paymentForm(w http.ResponseWriter, r *http.Request) {
 	itemId := r.URL.Query().Get("item_id")
 
-	paymentId, err := payment.MakePaymentIntent(&payment.Stripe{}, getAmount(itemId))
-
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
+	token = generateToken()
 
 	tmpl, _  := template.ParseFiles("assets/templates/payment_form.html")
-	tmpl.Execute(w, paymentId)
+	tmpl.Execute(w, map[string]interface{}{
+		"Amount": getAmount(itemId),
+		"Token": token,
+	})
 	return
 }
 
 func paymentCharge(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
+
+	if r.Form.Get("csrf") != token {
+		http.Error(w, "Forbidden csrf token", 500)
+		return
+	}
+
+	gateway := getPaymentGateway(r.Form.Get("payment_method"))
+
+	paymentId, err := payment.MakePaymentIntent(gateway, r.Form.Get("amount"))
+
+	if err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 
 	cardToken := r.Form.Get("card_token")
 
@@ -95,13 +132,13 @@ func paymentCharge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	paymentConfirmRequestDto := dto.PaymentConfirmRequestDto{
-		PaymentId: r.Form.Get("payment_id"),
+		PaymentId: paymentId,
 		Currency:  r.Form.Get("currency"),
 		CardName:  r.Form.Get("card_name"),
 		CardToken: cardToken,
 	}
 
-	err := validator.New().Struct(paymentConfirmRequestDto)
+	err = validator.New().Struct(paymentConfirmRequestDto)
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -115,7 +152,5 @@ func paymentCharge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, paymentConfirm.ReceiptUrl, http.StatusSeeOther)
-
-	return
+	w.Write(paymentConfirm)
 }
