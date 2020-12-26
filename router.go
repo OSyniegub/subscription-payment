@@ -63,25 +63,35 @@ func paymentForm(w http.ResponseWriter, r *http.Request) {
 func paymentCharge(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 
-	cardTokenGenerateRequestDto := dto.CardTokenGenerateRequestDto{
-		CardNumber:       r.Form.Get("card_number"),
-		CardExpiryMonth:  r.Form.Get("card_expiry_month"),
-		CardExpiryYear:   r.Form.Get("card_expiry_year"),
-		CardSecurityCode: r.Form.Get("card_security_code"),
+	cardToken := r.Form.Get("card_token")
+
+	if cardToken == "" {
+		cardTokenGenerateRequestDto := dto.CardTokenGenerateRequestDto{
+			CardNumber:       r.Form.Get("card_number"),
+			CardExpiryMonth:  r.Form.Get("card_expiry_month"),
+			CardExpiryYear:   r.Form.Get("card_expiry_year"),
+			CardSecurityCode: r.Form.Get("card_security_code"),
+		}
+
+		err := validator.New().Struct(cardTokenGenerateRequestDto)
+
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		cardToken, err = payment.MakeCardTokenGenerate(&payment.Stripe{}, cardTokenGenerateRequestDto)
+
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
 	}
 
-	err := validator.New().Struct(cardTokenGenerateRequestDto)
-
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
-	}
-
-	cardToken, err := payment.MakeCardTokenGenerate(&payment.Stripe{}, cardTokenGenerateRequestDto)
-
-	if err != nil {
-		http.Error(w, err.Error(), 500)
-		return
+	// As far as JS script receive card token from google pay test env we need to replace it with stripe test card token
+	// Will be used only in case of GooglePay method
+	if cardToken == "examplePaymentMethodToken" {
+		cardToken = "tok_visa"
 	}
 
 	paymentConfirmRequestDto := dto.PaymentConfirmRequestDto{
@@ -91,7 +101,7 @@ func paymentCharge(w http.ResponseWriter, r *http.Request) {
 		CardToken: cardToken,
 	}
 
-	err = validator.New().Struct(paymentConfirmRequestDto)
+	err := validator.New().Struct(paymentConfirmRequestDto)
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)

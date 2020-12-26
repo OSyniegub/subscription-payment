@@ -7,6 +7,8 @@
     <link href='https://use.fontawesome.com/releases/v5.8.1/css/all.css'>
     <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js'></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    <script async src="https://pay.google.com/gp/p/js/pay.js" onload="onGooglePayLoaded()"></script>
 </head>
 <body>
 <div class="container">
@@ -23,11 +25,11 @@
                             <a class="nav-link" data-toggle="pill" href="#nav-tab-paypal">
                                 <i class="fab fa-paypal"></i>  Paypal</a></li>
                         <li class="nav-item">
-                            <a class="nav-link" data-toggle="pill" href="#nav-tab-paypal">
-                                <i class="fab fa-paypal"></i>  ApplePay</a></li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-toggle="pill" href="#nav-tab-paypal">
+                            <a class="nav-link" data-toggle="pill" href="#nav-tab-google">
                                 <i class="fab fa-paypal"></i>  GooglePay</a></li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-toggle="pill" href="#nav-tab-apple">
+                                <i class="fab fa-paypal"></i>  ApplePay</a></li>
                     </ul>
 
                     <div class="tab-content">
@@ -81,6 +83,13 @@
                             <p><strong>Note:</strong> Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
                                 tempor incididunt ut labore et dolore magna aliqua. </p>
                         </div>
+                        <div class="tab-pane fade" id="nav-tab-google">
+                            <p>GooglePay</p>
+                            <p hidden id="google-pay-payment-id">{{ . }}</p>
+                            <div id="google-pay-button">
+                                <!-- A Stripe Element will be inserted here. -->
+                            </div>
+                        </div>
                     </div> <!-- tab-content .// -->
 
                 </div> <!-- card-body.// -->
@@ -90,4 +99,267 @@
         </div>
     </div>
 </body>
+<script>
+    /**
+     * Define the version of the Google Pay API referenced when creating your
+     * configuration
+     *
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#PaymentDataRequest|apiVersion in PaymentDataRequest}
+     */
+    const baseRequest = {
+        apiVersion: 2,
+        apiVersionMinor: 0
+    };
+
+    /**
+     * Card networks supported by your site and your gateway
+     *
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#CardParameters|CardParameters}
+     * @todo confirm card networks supported by your site and gateway
+     */
+    const allowedCardNetworks = ["AMEX", "DISCOVER", "INTERAC", "JCB", "MASTERCARD", "VISA"];
+
+    /**
+     * Card authentication methods supported by your site and your gateway
+     *
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#CardParameters|CardParameters}
+     * @todo confirm your processor supports Android device tokens for your
+     * supported card networks
+     */
+    const allowedCardAuthMethods = ["PAN_ONLY", "CRYPTOGRAM_3DS"];
+
+    /**
+     * Identify your gateway and your site's gateway merchant identifier
+     *
+     * The Google Pay API response will return an encrypted payment method capable
+     * of being charged by a supported gateway after payer authorization
+     *
+     * @todo check with your gateway on the parameters to pass
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#gateway|PaymentMethodTokenizationSpecification}
+     */
+    const tokenizationSpecification = {
+        type: 'PAYMENT_GATEWAY',
+        parameters: {
+            'gateway': 'example',
+            'gatewayMerchantId': 'exampleGatewayMerchantId'
+        }
+    };
+
+    /**
+     * Describe your site's support for the CARD payment method and its required
+     * fields
+     *
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#CardParameters|CardParameters}
+     */
+    const baseCardPaymentMethod = {
+        type: 'CARD',
+        parameters: {
+            allowedAuthMethods: allowedCardAuthMethods,
+            allowedCardNetworks: allowedCardNetworks
+        }
+    };
+
+    /**
+     * Describe your site's support for the CARD payment method including optional
+     * fields
+     *
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#CardParameters|CardParameters}
+     */
+    const cardPaymentMethod = Object.assign(
+        {},
+        baseCardPaymentMethod,
+        {
+            tokenizationSpecification: tokenizationSpecification
+        }
+    );
+
+    /**
+     * An initialized google.payments.api.PaymentsClient object or null if not yet set
+     *
+     * @see {@link getGooglePaymentsClient}
+     */
+    let paymentsClient = null;
+
+    /**
+     * Configure your site's support for payment methods supported by the Google Pay
+     * API.
+     *
+     * Each member of allowedPaymentMethods should contain only the required fields,
+     * allowing reuse of this base request when determining a viewer's ability
+     * to pay and later requesting a supported payment method
+     *
+     * @returns {object} Google Pay API version, payment methods supported by the site
+     */
+    function getGoogleIsReadyToPayRequest() {
+        return Object.assign(
+            {},
+            baseRequest,
+            {
+                allowedPaymentMethods: [baseCardPaymentMethod]
+            }
+        );
+    }
+
+    /**
+     * Configure support for the Google Pay API
+     *
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#PaymentDataRequest|PaymentDataRequest}
+     * @returns {object} PaymentDataRequest fields
+     */
+    function getGooglePaymentDataRequest() {
+        const paymentDataRequest = Object.assign({}, baseRequest);
+        paymentDataRequest.allowedPaymentMethods = [cardPaymentMethod];
+        paymentDataRequest.transactionInfo = getGoogleTransactionInfo();
+        paymentDataRequest.merchantInfo = {
+            // @todo a merchant ID is available for a production environment after approval by Google
+            // See {@link https://developers.google.com/pay/api/web/guides/test-and-deploy/integration-checklist|Integration checklist}
+            // merchantId: '01234567890123456789',
+            merchantName: 'Example Merchant'
+        };
+        return paymentDataRequest;
+    }
+
+    /**
+     * Return an active PaymentsClient or initialize
+     *
+     * @see {@link https://developers.google.com/pay/api/web/reference/client#PaymentsClient|PaymentsClient constructor}
+     * @returns {google.payments.api.PaymentsClient} Google Pay API client
+     */
+    function getGooglePaymentsClient() {
+        if ( paymentsClient === null ) {
+            paymentsClient = new google.payments.api.PaymentsClient({environment: 'TEST'});
+        }
+        return paymentsClient;
+    }
+
+    /**
+     * Initialize Google PaymentsClient after Google-hosted JavaScript has loaded
+     *
+     * Display a Google Pay payment button after confirmation of the viewer's
+     * ability to pay.
+     */
+    function onGooglePayLoaded() {
+        const paymentsClient = getGooglePaymentsClient();
+        paymentsClient.isReadyToPay(getGoogleIsReadyToPayRequest())
+            .then(function(response) {
+                if (response.result) {
+                    addGooglePayButton();
+                    // @todo prefetch payment data to improve performance after confirming site functionality
+                    // prefetchGooglePaymentData();
+                }
+            })
+            .catch(function(err) {
+                // show error in developer console for debugging
+                console.error(err);
+            });
+    }
+
+    /**
+     * Add a Google Pay purchase button alongside an existing checkout button
+     *
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#ButtonOptions|Button options}
+     * @see {@link https://developers.google.com/pay/api/web/guides/brand-guidelines|Google Pay brand guidelines}
+     */
+    function addGooglePayButton() {
+        const paymentsClient = getGooglePaymentsClient();
+        const button =
+            paymentsClient.createButton({onClick: onGooglePaymentButtonClicked});
+
+        document.getElementById('google-pay-button').appendChild(button);
+    }
+
+    /**
+     * Provide Google Pay API with a payment amount, currency, and amount status
+     *
+     * @see {@link https://developers.google.com/pay/api/web/reference/request-objects#TransactionInfo|TransactionInfo}
+     * @returns {object} transaction info, suitable for use as transactionInfo property of PaymentDataRequest
+     */
+    function getGoogleTransactionInfo() {
+        return {
+            countryCode: 'US',
+            currencyCode: 'USD',
+            totalPriceStatus: 'FINAL',
+            // set to cart total
+            totalPrice: '1.00'
+        };
+    }
+
+    /**
+     * Prefetch payment data to improve performance
+     *
+     * @see {@link https://developers.google.com/pay/api/web/reference/client#prefetchPaymentData|prefetchPaymentData()}
+     */
+    function prefetchGooglePaymentData() {
+        const paymentDataRequest = getGooglePaymentDataRequest();
+        // transactionInfo must be set but does not affect cache
+        paymentDataRequest.transactionInfo = {
+            totalPriceStatus: 'NOT_CURRENTLY_KNOWN',
+            currencyCode: 'USD'
+        };
+        const paymentsClient = getGooglePaymentsClient();
+        paymentsClient.prefetchPaymentData(paymentDataRequest);
+    }
+
+    /**
+     * Show Google Pay payment sheet when Google Pay payment button is clicked
+     */
+    function onGooglePaymentButtonClicked() {
+        const paymentDataRequest = getGooglePaymentDataRequest();
+        paymentDataRequest.transactionInfo = getGoogleTransactionInfo();
+
+        const paymentsClient = getGooglePaymentsClient();
+        paymentsClient.loadPaymentData(paymentDataRequest)
+            .then(function(paymentData) {
+                // handle the response
+                processPayment(paymentData);
+            })
+            .catch(function(err) {
+                // show error in developer console for debugging
+                console.error(err);
+            });
+    }
+
+    /**
+     * Process payment data returned by the Google Pay API
+     *
+     * @param {object} paymentData response from Google Pay API after user approves payment
+     * @see {@link https://developers.google.com/pay/api/web/reference/response-objects#PaymentData|PaymentData object reference}
+     */
+    function processPayment(paymentData) {
+        // show returned data in developer console for debugging
+        // @todo pass payment token to your gateway to process payment
+        const paymentToken = paymentData.paymentMethodData.tokenizationData.token;
+
+        const form = document.createElement("form");
+        form.setAttribute('type', 'hidden')
+        const cardToken = document.createElement("input");
+        cardToken.setAttribute('type', 'hidden')
+        cardToken.setAttribute('name', 'card_token')
+        cardToken.setAttribute('value', paymentToken)
+        const paymentId = document.createElement("input");
+        paymentId.setAttribute('type', 'hidden')
+        paymentId.setAttribute('name', 'payment_id')
+        paymentId.setAttribute('value', document.getElementById('google-pay-payment-id').innerText)
+        const cardName = document.createElement("input");
+        cardName.setAttribute('type', 'hidden')
+        cardName.setAttribute('name', 'card_name')
+        cardName.setAttribute('value', 'Fin Parnishka')
+        const currency = document.createElement("input");
+        currency.setAttribute('type', 'hidden')
+        currency.setAttribute('name', 'currency')
+        currency.setAttribute('value', 'USD')
+
+        form.method = "POST";
+        form.action = "/api/v1/charge";
+
+        form.appendChild(cardToken);
+        form.appendChild(cardName);
+        form.appendChild(paymentId);
+        form.appendChild(currency);
+
+        document.getElementById('nav-tab-google').appendChild(form);
+
+        form.submit();
+    }
+</script>
 </html>
