@@ -6,6 +6,8 @@ import (
 	"github.com/OSyniegub/subscription-payment/payment"
 	"github.com/OSyniegub/subscription-payment/payment/dto"
 	"github.com/gorilla/mux"
+	"github.com/stripe/stripe-go/v71/paymentintent"
+	"github.com/stripe/stripe-go/v71/token"
 	"gopkg.in/go-playground/validator.v9"
 	"html/template"
 	"io"
@@ -52,10 +54,13 @@ func getPaymentGateway(paymentMethod string) payment.Gateway {
 	}
 	*/
 
-	return &payment.Stripe{}
+	return &payment.Stripe{
+		DoPaymentIntent: paymentintent.Client{},
+		Token: token.Client{},
+	}
 }
 
-var token string
+var csrfToken string
 
 func generateToken() string {
 	h := md5.New()
@@ -75,12 +80,12 @@ func home(w http.ResponseWriter, r *http.Request) {
 func paymentForm(w http.ResponseWriter, r *http.Request) {
 	itemId := r.URL.Query().Get("item_id")
 
-	token = generateToken()
+	csrfToken = generateToken()
 
 	tmpl, _  := template.ParseFiles("assets/templates/payment_form.html")
 	tmpl.Execute(w, map[string]interface{}{
 		"Amount": getAmount(itemId),
-		"Token": token,
+		"Token": csrfToken,
 	})
 	return
 }
@@ -89,14 +94,14 @@ func paymentCharge(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	r.ParseForm()
 
-	if r.Form.Get("csrf") != token {
+	if r.Form.Get("csrf") != csrfToken {
 		http.Error(w, "Forbidden csrf token", 500)
 		return
 	}
 
 	gateway := getPaymentGateway(r.Form.Get("payment_method"))
 
-	paymentId, err := payment.MakePaymentIntent(gateway, r.Form.Get("amount"))
+	paymentId, err := gateway.PaymentIntent(r.Form.Get("amount"))
 
 	if err != nil {
 		http.Error(w, err.Error(), 500)
@@ -120,7 +125,7 @@ func paymentCharge(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		cardToken, err = payment.MakeCardTokenGenerate(&payment.Stripe{}, cardTokenGenerateRequestDto)
+		cardToken, err = gateway.CardTokenGenerate(cardTokenGenerateRequestDto)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)
@@ -148,7 +153,7 @@ func paymentCharge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	paymentConfirm, err := payment.MakePaymentConfirm(&payment.Stripe{}, paymentConfirmRequestDto)
+	paymentConfirm, err := gateway.PaymentConfirm(paymentConfirmRequestDto)
 
 	if err != nil  {
 		http.Error(w, err.Error(), 500)

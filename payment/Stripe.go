@@ -1,16 +1,26 @@
 package payment
 
 import (
-	"github.com/OSyniegub/subscription-payment/payment/dto"
 	"encoding/json"
+	"github.com/OSyniegub/subscription-payment/payment/dto"
 	"github.com/stripe/stripe-go/v71"
-	"github.com/stripe/stripe-go/v71/paymentintent"
-	"github.com/stripe/stripe-go/v71/token"
 	"os"
 	"strconv"
 )
 
-type Stripe struct {}
+type StripePaymentIntent interface {
+	New(*stripe.PaymentIntentParams) (*stripe.PaymentIntent, error)
+	Confirm(id string, params *stripe.PaymentIntentConfirmParams) (*stripe.PaymentIntent, error)
+}
+
+type StripeToken interface {
+	New(params *stripe.TokenParams) (*stripe.Token, error)
+}
+
+type Stripe struct {
+	DoPaymentIntent StripePaymentIntent
+	Token StripeToken
+}
 
 func (s Stripe) PaymentIntent(amount string) (string, error) {
 	stripe.Key = os.Getenv("STRIPE_KEY")
@@ -28,7 +38,7 @@ func (s Stripe) PaymentIntent(amount string) (string, error) {
 
 	params.AddMetadata("integration_check", "accept_a_payment")
 
-	pi, err := paymentintent.New(params)
+	pi, err := s.DoPaymentIntent.New(params)
 
 	if err != nil {
 		return "", err
@@ -52,7 +62,7 @@ func (s Stripe) PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) ([]byte,
 		},
 	}
 
-	pic, err := paymentintent.Confirm(requestDto.PaymentId, params)
+	pic, err := s.DoPaymentIntent.Confirm(requestDto.PaymentId, params)
 
 	if err != nil {
 		return []byte(""), err
@@ -79,7 +89,7 @@ func (s Stripe) CardTokenGenerate(requestDto dto.CardTokenGenerateRequestDto) (s
 		},
 	}
 
-	t, err := token.New(params)
+	t, err := s.Token.New(params)
 
 	if err != nil {
 		return "", err
