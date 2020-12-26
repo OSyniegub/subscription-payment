@@ -6,13 +6,14 @@ import (
 	"github.com/stripe/stripe-go/v71"
 	"github.com/stripe/stripe-go/v71/paymentintent"
 	"github.com/stripe/stripe-go/v71/token"
+	"os"
 	"strconv"
 )
 
 type Stripe struct {}
 
 func (s Stripe) PaymentIntent(amount string) (string, error) {
-	stripe.Key = "sk_test_51I1dzaAoiWfQjN7OE4ExtBtv6S5RvXxcQQt8sIHzcMSfs9wgUakNFl5udNXckUHXvcLeVWY1wMzdAsfkJnhm5WQI00pOFESNLQ"
+	stripe.Key = os.Getenv("STRIPE_KEY")
 
 	amountInt, err := strconv.Atoi(amount)
 
@@ -37,7 +38,7 @@ func (s Stripe) PaymentIntent(amount string) (string, error) {
 }
 
 func (s Stripe) PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) ([]byte, error) {
-	stripe.Key = "sk_test_51I1dzaAoiWfQjN7OE4ExtBtv6S5RvXxcQQt8sIHzcMSfs9wgUakNFl5udNXckUHXvcLeVWY1wMzdAsfkJnhm5WQI00pOFESNLQ"
+	stripe.Key = os.Getenv("STRIPE_KEY")
 
 	params := &stripe.PaymentIntentConfirmParams{
 		PaymentMethodData: &stripe.PaymentIntentPaymentMethodDataParams{
@@ -67,7 +68,7 @@ func (s Stripe) PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) ([]byte,
 }
 
 func (s Stripe) CardTokenGenerate(requestDto dto.CardTokenGenerateRequestDto) (string, error) {
-	stripe.Key = "sk_test_51I1dzaAoiWfQjN7OE4ExtBtv6S5RvXxcQQt8sIHzcMSfs9wgUakNFl5udNXckUHXvcLeVWY1wMzdAsfkJnhm5WQI00pOFESNLQ"
+	stripe.Key = os.Getenv("STRIPE_KEY")
 
 	params := &stripe.TokenParams{
 		Card: &stripe.CardParams{

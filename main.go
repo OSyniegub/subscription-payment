@@ -16,6 +16,8 @@ func getPort() string {
 }
 
 func main() {
+	_ = os.Setenv("STRIPE_KEY", "sk_test_51I1dzaAoiWfQjN7OE4ExtBtv6S5RvXxcQQt8sIHzcMSfs9wgUakNFl5udNXckUHXvcLeVWY1wMzdAsfkJnhm5WQI00pOFESNLQ")
+
 	// Routes Configuration
 	router := setupRouter()
 
