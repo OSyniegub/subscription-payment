@@ -10,7 +10,9 @@ import (
 	"html/template"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
+	"time"
 )
 
 func setupRouter() *mux.Router {
@@ -84,6 +86,7 @@ func paymentForm(w http.ResponseWriter, r *http.Request) {
 }
 
 func paymentCharge(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
 	r.ParseForm()
 
 	if r.Form.Get("csrf") != token {
@@ -152,5 +155,16 @@ func paymentCharge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hostname, err := os.Hostname()
+
+	if err != nil  {
+		http.Error(w, err.Error(), 500)
+		return
+	}
+
+	fmt.Println(strconv.Itoa(int(time.Since(start).Milliseconds())) + "ms")
+
+	w.Header().Add("X-Server-Name", hostname)
+	w.Header().Add("X-Response-Time", strconv.Itoa(int(time.Since(start).Milliseconds())) + "ms")
 	w.Write(paymentConfirm)
 }
