@@ -1,26 +1,21 @@
 package payment
 
-import (
-	"errors"
-	"github.com/OSyniegub/subscription-payment/payment/dto"
-)
+import "github.com/OSyniegub/subscription-payment/payment/dto"
 
 type GooglePay struct {}
 
+//TODO implement separate GooglePay payment processing
+//For now it uses Stripe (card token generates on the frontend side from google api)
+//and then replaced with stripe card token
+
 func (s GooglePay) PaymentIntent(amount string) (string, error) {
-	//TODO implement separate GooglePay payment processing
-	//For now it uses Stripe (hardcoded)
-	return "", errors.New("")
+	return "", nil
 }
 
 func (s GooglePay) PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) ([]byte, error) {
-	//TODO implement separate GooglePay payment processing
-	//For now it uses Stripe (hardcoded)
-	return []byte(""), errors.New("")
+	return []byte(""), nil
 }
 
 func (s GooglePay) CardTokenGenerate(requestDto dto.CardTokenGenerateRequestDto) (string, error) {
-	//TODO implement separate GooglePay payment processing
-	//For now it uses Stripe (hardcoded)
-	return "", errors.New("")
+	return "", nil
 }

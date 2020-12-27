@@ -11,7 +11,7 @@ import (
 type StripePaymentIntentMock struct {}
 type StripeTokenMock struct {}
 
-func (s StripePaymentIntentMock) New(*stripe.PaymentIntentParams) (*stripe.PaymentIntent, error) {
+func (s StripePaymentIntentMock) New(params *stripe.PaymentIntentParams) (*stripe.PaymentIntent, error) {
 	return &stripe.PaymentIntent{
 		ID: "payment_id",
 	}, nil

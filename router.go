@@ -6,6 +6,7 @@ import (
 	"github.com/OSyniegub/subscription-payment/payment"
 	"github.com/OSyniegub/subscription-payment/payment/dto"
 	"github.com/gorilla/mux"
+	"github.com/stripe/stripe-go/v71"
 	"github.com/stripe/stripe-go/v71/paymentintent"
 	"github.com/stripe/stripe-go/v71/token"
 	"gopkg.in/go-playground/validator.v9"
@@ -44,19 +45,27 @@ func getAmount(itemId string) int64 {
 }
 
 func getPaymentGateway(paymentMethod string) payment.Gateway {
-	/* not working due to authorization error
-	var gateway payment.Gateway
+	/* TODO Create developer accounts for google/apple pay and implement PayPal on the backend side (it is on the frontend for now)
+		Not working due to authorization error
 
-	if paymentMethod == "card" {
-		gateway = &payment.Stripe{}
-	} else if paymentMethod == "paypal" {
-			gateway = &payment.Paypal{}
-	}
+		var gateway payment.Gateway
+
+		if paymentMethod == "card" {
+			gateway = &payment.Stripe{}
+		} else if paymentMethod == "paypal" {
+				gateway = &payment.Paypal{}
+		}
 	*/
 
 	return &payment.Stripe{
-		DoPaymentIntent: paymentintent.Client{},
-		Token: token.Client{},
+		DoPaymentIntent: paymentintent.Client{
+			B: stripe.GetBackend("api"),
+			Key: os.Getenv("STRIPE_KEY"),
+		},
+		Token: token.Client{
+			B: stripe.GetBackend("api"),
+			Key: os.Getenv("STRIPE_KEY"),
+		},
 	}
 }
 

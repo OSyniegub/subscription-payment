@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"github.com/OSyniegub/subscription-payment/payment/dto"
 	"github.com/stripe/stripe-go/v71"
-	"os"
 	"strconv"
 )
 
 type StripePaymentIntent interface {
-	New(*stripe.PaymentIntentParams) (*stripe.PaymentIntent, error)
+	New(params *stripe.PaymentIntentParams) (*stripe.PaymentIntent, error)
 	Confirm(id string, params *stripe.PaymentIntentConfirmParams) (*stripe.PaymentIntent, error)
 }
 
@@ -23,8 +22,6 @@ type Stripe struct {
 }
 
 func (s Stripe) PaymentIntent(amount string) (string, error) {
-	stripe.Key = os.Getenv("STRIPE_KEY")
-
 	amountInt, err := strconv.Atoi(amount)
 
 	if err != nil {
@@ -48,8 +45,6 @@ func (s Stripe) PaymentIntent(amount string) (string, error) {
 }
 
 func (s Stripe) PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) ([]byte, error) {
-	stripe.Key = os.Getenv("STRIPE_KEY")
-
 	params := &stripe.PaymentIntentConfirmParams{
 		PaymentMethodData: &stripe.PaymentIntentPaymentMethodDataParams{
 			Card: &stripe.PaymentMethodCardParams{
@@ -78,8 +73,6 @@ func (s Stripe) PaymentConfirm(requestDto dto.PaymentConfirmRequestDto) ([]byte,
 }
 
 func (s Stripe) CardTokenGenerate(requestDto dto.CardTokenGenerateRequestDto) (string, error) {
-	stripe.Key = os.Getenv("STRIPE_KEY")
-
 	params := &stripe.TokenParams{
 		Card: &stripe.CardParams{
 			Number: stripe.String(requestDto.CardNumber),
