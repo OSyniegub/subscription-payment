@@ -1,5 +1,9 @@
 # subscription-payment
 
+## Heroku
+
+You can try it on Heroku - https://subscription-gateway.herokuapp.com/
+
 ## Requirements
 
 - [Golang v1.15](https://golang.org/doc/install)
@@ -38,7 +42,3 @@ When you're done work with the project just press `^C` on a terminal where the p
 
 - Sorry, it doesn't support (Apple developer account needed)
 - But if you will run the project from Safari you will see unclickable apple pay button :)
-
-## Heroku
-
-You can try it on Heroku - https://subscription-gateway.herokuapp.com/
